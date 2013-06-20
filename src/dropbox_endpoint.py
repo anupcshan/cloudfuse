@@ -10,11 +10,10 @@ import httplib
 CONSUMER_KEY = 'oozzv31vqhn0fm5'
 CONSUMER_SECRET = 'vmy8fa4jbtb0jw0'
 
-REQUEST_TOKEN_URL = 'https://api.dropbox.com/1/oauth/request_token'
-AUTHORIZE_URL = 'https://www.dropbox.com/1/oauth/authorize'
 ACCESS_TOKEN_URL = 'https://api.dropbox.com/1/oauth/access_token'
-
+AUTHORIZE_URL = 'https://www.dropbox.com/1/oauth/authorize'
 GETINFO_URL = 'https://api.dropbox.com/1/account/info'
+REQUEST_TOKEN_URL = 'https://api.dropbox.com/1/oauth/request_token'
 
 class DropBoxEndPoint(EndPoint):
     def __init__(self):
@@ -48,13 +47,6 @@ class DropBoxEndPoint(EndPoint):
 
         resp, content = client.request(ACCESS_TOKEN_URL, "POST")
         self._access_token = dict(urlparse.parse_qsl(content))
-
-        print "Access Token:"
-        print "    - oauth_token        = %s" % self._access_token['oauth_token']
-        print "    - oauth_token_secret = %s" % self._access_token['oauth_token_secret']
-        print
-        print "You may now access protected resources using the access tokens above." 
-        print
 
     def getInfo(self):
         params = {
