@@ -9,6 +9,9 @@ class EndPoint:
 
     This step should call storeCredentials to persist its credentials
     once the authentication is complete.
+
+    TODO: Split this into initAuthentication and postAuthentication? That helps
+    in cases where authentication involves a callback (like OAuth).
     """
     def authenticate(self):
         raise NotImplementedError("authenticate not implemented")
