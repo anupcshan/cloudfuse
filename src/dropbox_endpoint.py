@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
 from endpoint import EndPoint
-import oauth2 as oauth
-import urlparse
-import time
 import httplib
+import json
+import oauth2 as oauth
+import time
+import urlparse
 
 # Figure out a way to store these securely instead of having it open on github.
 CONSUMER_KEY = 'oozzv31vqhn0fm5'
@@ -18,7 +19,7 @@ REQUEST_TOKEN_URL = 'https://api.dropbox.com/1/oauth/request_token'
 class DropBoxEndPoint(EndPoint):
     def __init__(self):
         self._access_token = None
-        self._consumer = oauth.Consumer(key = CONSUMER_KEY, secret = CONSUMER_SECRET)
+        self._consumer = oauth.Consumer(key=CONSUMER_KEY, secret=CONSUMER_SECRET)
         self._connection = httplib.HTTPSConnection('api.dropbox.com')
 
     def authenticate(self):
@@ -65,7 +66,15 @@ class DropBoxEndPoint(EndPoint):
 
         self._connection.request('GET', GETINFO_URL, headers=req.to_header())
         response = self._connection.getresponse()
-        print response.read()
+        info = json.loads(response.read())
+        userInfo = {
+            'uid': info['uid'],
+            'uname': info['email'],
+            'totalBytes': info['quota_info']['quota'],
+            'usedBytes': info['quota_info']['shared'] + info['quota_info']['normal']
+        }
+        userInfo['freeBytes'] = userInfo['totalBytes'] - userInfo['usedBytes']
+        print userInfo
 
 if __name__ == '__main__':
     dbep = DropBoxEndPoint()
