@@ -1,8 +1,25 @@
 #!/usr/bin/python
 
+import errno
+import os
+
+DEFAULT_CREDENTIALS_DIR = os.environ['HOME'] + '/.cloudfs'
+
 class EndPoint:
-    def __init__(self):
-        pass
+    def __init__(self, credDir):
+        if credDir is None:
+            self.credentialsDir = DEFAULT_CREDENTIALS_DIR
+        else:
+            self.credentialsDir = credDir
+
+        self.ensureCredentialsDirExists()
+
+    def ensureCredentialsDirExists(self):
+        try:
+            os.makedirs(self.credentialsDir)
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
 
     """
     Authenticate the client with its backend provider.
@@ -66,3 +83,12 @@ class EndPoint:
     """
     def storeCredentials(self, credentials):
         raise NotImplementedError("storeCredentials not implemented")
+
+    """
+    Get a unique provider ID which determines which endpoint loads a
+    set of stored credentials. This should be able to handle multiple API versions.
+
+    TODO: Should this be made into a checker method?
+    """
+    def getProviderId(self):
+        raise NotImplementedError("getProviderId not implemented")

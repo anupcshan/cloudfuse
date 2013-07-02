@@ -18,7 +18,8 @@ GETINFO_URL = 'https://api.copy.com/rest/user'
 REQUEST_TOKEN_URL = 'https://api.copy.com/oauth/request'
 
 class CopyEndPoint(EndPoint):
-    def __init__(self):
+    def __init__(self, configDir = None):
+        EndPoint.__init__(self, configDir)
         self._access_token = None
         self._consumer = oauth.Consumer(key=CONSUMER_KEY, secret=CONSUMER_SECRET)
         self._connection = httplib.HTTPSConnection('api.copy.com')
@@ -83,6 +84,9 @@ class CopyEndPoint(EndPoint):
         }
         userInfo['freeBytes'] = userInfo['totalBytes'] - userInfo['usedBytes']
         print userInfo
+
+    def getProviderId(self):
+        return "copy.v1"
 
 if __name__ == '__main__':
     cep = CopyEndPoint()
