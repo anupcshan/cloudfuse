@@ -17,8 +17,8 @@ GETINFO_URL = 'https://api.dropbox.com/1/account/info'
 REQUEST_TOKEN_URL = 'https://api.dropbox.com/1/oauth/request_token'
 
 class DropBoxEndPoint(EndPoint):
-    def __init__(self, configDir = None):
-        EndPoint.__init__(self, configDir)
+    def __init__(self):
+        EndPoint.__init__(self)
         self._access_token = None
         self._consumer = oauth.Consumer(key=CONSUMER_KEY, secret=CONSUMER_SECRET)
         self._connection = httplib.HTTPSConnection('api.dropbox.com')
@@ -49,6 +49,7 @@ class DropBoxEndPoint(EndPoint):
 
         resp, content = client.request(ACCESS_TOKEN_URL, "POST")
         self._access_token = dict(urlparse.parse_qsl(content))
+        DropBoxEndPoint.storeCredentials(self._access_token, self._uuid)
 
     def getInfo(self):
         params = {
@@ -76,6 +77,9 @@ class DropBoxEndPoint(EndPoint):
         }
         userInfo['freeBytes'] = userInfo['totalBytes'] - userInfo['usedBytes']
         print userInfo
+
+    def loadCredentials(self, credentials):
+        self._access_token = credentials
 
     @classmethod
     def getProviderId(self):

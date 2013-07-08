@@ -18,8 +18,8 @@ GETINFO_URL = 'https://api.copy.com/rest/user'
 REQUEST_TOKEN_URL = 'https://api.copy.com/oauth/request'
 
 class CopyEndPoint(EndPoint):
-    def __init__(self, configDir = None):
-        EndPoint.__init__(self, configDir)
+    def __init__(self):
+        EndPoint.__init__(self)
         self._access_token = None
         self._consumer = oauth.Consumer(key=CONSUMER_KEY, secret=CONSUMER_SECRET)
         self._connection = httplib.HTTPSConnection('api.copy.com')

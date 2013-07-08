@@ -2,34 +2,37 @@
 
 import errno
 import os
+import pickle
+import uuid
 
-DEFAULT_CREDENTIALS_DIR = os.environ['HOME'] + '/.cloudfs'
+DEFAULT_CREDENTIALS_DIR = os.environ['HOME'] + '/.cloudfs/credentials'
 
 class Registry:
     def __init__(self):
-        self.endpoints = {}
-        self.folderToEndPointMap = {}
+        self.endpointclasses = {}
+        self.endpoints = []
 
     def registerEndpoint(self, providerId, cls):
         print 'Registering endpoint with id %s' % providerId
-        self.endpoints[providerId] = cls
-        print 'Total endpoints %d' % len(self.endpoints)
+        self.endpointclasses[providerId] = cls
+        print 'Total endpointclasses %d' % len(self.endpointclasses)
+
+    def getEndPointForProvider(self, providerId):
+        ep = self.endpointclasses[providerId]()
+        self.endpoints.append(ep)
+        return ep
 
 
 class EndPoint:
     __registry = Registry()
 
-    def __init__(self, credDir):
-        if credDir is None:
-            self.credentialsDir = DEFAULT_CREDENTIALS_DIR
-        else:
-            self.credentialsDir = credDir
+    def __init__(self):
+        self._uuid = uuid.uuid4().hex
 
-        self.ensureCredentialsDirExists()
-
+    @classmethod
     def ensureCredentialsDirExists(self):
         try:
-            os.makedirs(self.credentialsDir)
+            os.makedirs(DEFAULT_CREDENTIALS_DIR)
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
@@ -37,6 +40,18 @@ class EndPoint:
     @classmethod
     def registerEndPoint(cls):
         EndPoint.__registry.registerEndpoint(cls.getProviderId(), cls)
+
+    @classmethod
+    def loadSavedEndPoints(cls):
+        cls.ensureCredentialsDirExists()
+        for entry in os.listdir(DEFAULT_CREDENTIALS_DIR):
+            print 'Loading credentials %s' % entry
+            f = open(os.path.join(DEFAULT_CREDENTIALS_DIR, entry), 'r')
+            providerId = f.readline().splitlines()[0]
+            print 'Located provider %s' % providerId
+            ep = cls.__registry.getEndPointForProvider(providerId)
+            ep._uuid = entry
+            ep.loadCredentials(pickle.load(f))
 
     """
     Authenticate the client with its backend provider.
@@ -93,13 +108,23 @@ class EndPoint:
     def removeFile(self, path):
         raise NotImplementedError("removeFile not implemented")
 
+    def loadCredentials(self, credentials):
+        raise NotImplementedError("loadCredentials not implemented")
+
     """
     Save authorization keys or cookies after logging into the backend.
-
-    TODO: Should this be common across all endpoints? Add corresponding loadCredentials?
     """
-    def storeCredentials(self, credentials):
-        raise NotImplementedError("storeCredentials not implemented")
+    @classmethod
+    def storeCredentials(cls, credentials, _uuid=None):
+        if _uuid is None:
+            _uuid = uuid.uuid4().hex
+            print _uuid
+
+        f = open(os.path.join(DEFAULT_CREDENTIALS_DIR, _uuid), 'w')
+        f.write(cls.getProviderId() + '\n')
+        pickle.dump(credentials, f)
+        f.close()
+        return _uuid
 
     """
     Get a unique provider ID which determines which endpoint loads a
@@ -108,5 +133,5 @@ class EndPoint:
     TODO: Should this be made into a checker method?
     """
     @classmethod
-    def getProviderId(self):
+    def getProviderId(cls):
         raise NotImplementedError("getProviderId not implemented")
