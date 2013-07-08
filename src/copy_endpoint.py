@@ -53,6 +53,7 @@ class CopyEndPoint(EndPoint):
 
         resp, content = client.request(ACCESS_TOKEN_URL, "POST")
         self._access_token = dict(urlparse.parse_qsl(content))
+        CopyEndPoint.storeCredentials(self._access_token, self._uuid)
 
     def getInfo(self):
         params = {
@@ -69,21 +70,26 @@ class CopyEndPoint(EndPoint):
         signature_method = oauth.SignatureMethod_HMAC_SHA1()
         req.sign_request(signature_method, self._consumer, token)
 
-        print req.to_header()
-        self._connection.request('GET', GETINFO_URL, headers=req.to_header())
+        headers = req.to_header()
+        # Turns out the API rejects any request without this header :\
+        headers.update({'X-API-Version': '1.0'})
+        self._connection.request('GET', GETINFO_URL, headers=headers)
         response = self._connection.getresponse().read()
         print response
 
-        # FIXME: Figure out why we're getting an empty response.
         info = json.loads(response)
         userInfo = {
-            'uid': info['uid'],
+            'uid': info['user_id'],
             'uname': info['email'],
-            'totalBytes': info['quota_info']['quota'],
-            'usedBytes': info['quota_info']['shared'] + info['quota_info']['normal']
+            'totalBytes': info['storage']['quota'],
+            'usedBytes': info['storage']['used']
         }
         userInfo['freeBytes'] = userInfo['totalBytes'] - userInfo['usedBytes']
         print userInfo
+        return userInfo
+
+    def loadCredentials(self, credentials):
+        self._access_token = credentials
 
     @classmethod
     def getProviderId(self):
