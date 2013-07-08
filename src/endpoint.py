@@ -22,6 +22,9 @@ class Registry:
         self.endpoints.append(ep)
         return ep
 
+    def getEndPoints(self):
+        return self.endpoints
+
 
 class EndPoint:
     __registry = Registry()
@@ -52,6 +55,10 @@ class EndPoint:
             ep = cls.__registry.getEndPointForProvider(providerId)
             ep._uuid = entry
             ep.loadCredentials(pickle.load(f))
+
+    @classmethod
+    def getAllEndPoints(cls):
+        return EndPoint.__registry.getEndPoints()
 
     """
     Authenticate the client with its backend provider.

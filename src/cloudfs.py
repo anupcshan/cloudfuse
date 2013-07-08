@@ -13,18 +13,25 @@ class CloudFSOperations(llfuse.Operations):
     def statfs(self):
         stat_ = llfuse.StatvfsData()
 
+        freeBytes = 0
+        totalBytes = 0
+        usedBytes = 0
+
+        for endpoint in EndPoint.getAllEndPoints():
+            info = endpoint.getInfo()
+            freeBytes += info['freeBytes']
+            totalBytes += info['totalBytes']
+            usedBytes += info['usedBytes']
+
         stat_.f_bsize = 512
         stat_.f_frsize = 512
 
-        size = 10000000000
+        size = totalBytes
         stat_.f_blocks = size // stat_.f_frsize
-        stat_.f_bfree = max(size // stat_.f_frsize, 1024)
+        stat_.f_bfree = freeBytes // stat_.f_frsize
         stat_.f_bavail = stat_.f_bfree
 
-        inodes = 10000
-        stat_.f_files = inodes
-        stat_.f_ffree = max(inodes , 100)
-        stat_.f_favail = stat_.f_ffree
+        stat_.f_favail = stat_.f_ffree = stat_.f_files = 10000
 
         return stat_
     pass

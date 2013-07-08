@@ -77,6 +77,7 @@ class DropBoxEndPoint(EndPoint):
         }
         userInfo['freeBytes'] = userInfo['totalBytes'] - userInfo['usedBytes']
         print userInfo
+        return userInfo
 
     def loadCredentials(self, credentials):
         self._access_token = credentials
