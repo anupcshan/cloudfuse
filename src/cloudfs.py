@@ -2,6 +2,8 @@
 
 import llfuse
 import sys
+from dropbox_endpoint import DropBoxEndPoint
+from copy_endpoint import CopyEndPoint
 
 class CloudFSOperations(llfuse.Operations):
     def statfs(self):

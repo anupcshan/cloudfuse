@@ -5,7 +5,20 @@ import os
 
 DEFAULT_CREDENTIALS_DIR = os.environ['HOME'] + '/.cloudfs'
 
+class Registry:
+    def __init__(self):
+        self.endpoints = {}
+        self.folderToEndPointMap = {}
+
+    def registerEndpoint(self, providerId, cls):
+        print 'Registering endpoint with id %s' % providerId
+        self.endpoints[providerId] = cls
+        print 'Total endpoints %d' % len(self.endpoints)
+
+
 class EndPoint:
+    __registry = Registry()
+
     def __init__(self, credDir):
         if credDir is None:
             self.credentialsDir = DEFAULT_CREDENTIALS_DIR
@@ -20,6 +33,10 @@ class EndPoint:
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
+
+    @classmethod
+    def registerEndPoint(cls):
+        EndPoint.__registry.registerEndpoint(cls.getProviderId(), cls)
 
     """
     Authenticate the client with its backend provider.
@@ -90,5 +107,6 @@ class EndPoint:
 
     TODO: Should this be made into a checker method?
     """
+    @classmethod
     def getProviderId(self):
         raise NotImplementedError("getProviderId not implemented")

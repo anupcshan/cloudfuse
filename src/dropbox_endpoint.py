@@ -77,8 +77,11 @@ class DropBoxEndPoint(EndPoint):
         userInfo['freeBytes'] = userInfo['totalBytes'] - userInfo['usedBytes']
         print userInfo
 
+    @classmethod
     def getProviderId(self):
         return "dropbox.v1"
+
+DropBoxEndPoint.registerEndPoint()
 
 if __name__ == '__main__':
     dbep = DropBoxEndPoint()

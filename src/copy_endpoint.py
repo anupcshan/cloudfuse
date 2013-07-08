@@ -85,8 +85,11 @@ class CopyEndPoint(EndPoint):
         userInfo['freeBytes'] = userInfo['totalBytes'] - userInfo['usedBytes']
         print userInfo
 
+    @classmethod
     def getProviderId(self):
         return "copy.v1"
+
+CopyEndPoint.registerEndPoint()
 
 if __name__ == '__main__':
     cep = CopyEndPoint()
