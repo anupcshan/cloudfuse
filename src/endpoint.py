@@ -1,4 +1,5 @@
 #!/usr/bin/python
+"""Abstract cloud endpoint."""
 
 import errno
 import os
@@ -8,32 +9,35 @@ import uuid
 DEFAULT_CREDENTIALS_DIR = os.environ['HOME'] + '/.cloudfs/credentials'
 
 class Registry:
+    """List of registered EndPoint plugins."""
     def __init__(self):
         self.endpointclasses = {}
         self.endpoints = []
 
-    def registerEndpoint(self, providerId, cls):
-        print 'Registering endpoint with id %s' % providerId
-        self.endpointclasses[providerId] = cls
+    def register_endpoint(self, provider_id, cls):
+        print 'Registering endpoint with id %s' % provider_id
+        self.endpointclasses[provider_id] = cls
         print 'Total endpointclasses %d' % len(self.endpointclasses)
 
-    def getEndPointForProvider(self, providerId):
-        ep = self.endpointclasses[providerId]()
-        self.endpoints.append(ep)
-        return ep
+    def get_endpoint_for_provider(self, provider_id, _uuid = None):
+        endpoint = self.endpointclasses[provider_id](_uuid)
+        self.endpoints.append(endpoint)
+        return endpoint
 
-    def getEndPoints(self):
+    def get_endpoints(self):
         return self.endpoints
 
 
 class EndPoint:
     __registry = Registry()
 
-    def __init__(self):
-        self._uuid = uuid.uuid4().hex
+    def __init__(self, _uuid = None):
+        if _uuid is None:
+            _uuid = uuid.uuid4().hex
+        self._uuid = _uuid
 
     @classmethod
-    def ensureCredentialsDirExists(self):
+    def ensure_credentialsdir_exists(cls):
         try:
             os.makedirs(DEFAULT_CREDENTIALS_DIR)
         except OSError as exception:
@@ -41,29 +45,28 @@ class EndPoint:
                 raise
 
     @classmethod
-    def registerEndPoint(cls):
-        EndPoint.__registry.registerEndpoint(cls.getProviderId(), cls)
+    def register_endpoint(cls):
+        EndPoint.__registry.register_endpoint(cls.get_providerid(), cls)
 
     @classmethod
-    def loadSavedEndPoints(cls):
-        cls.ensureCredentialsDirExists()
+    def load_saved_endpoints(cls):
+        cls.ensure_credentialsdir_exists()
         for entry in os.listdir(DEFAULT_CREDENTIALS_DIR):
             print 'Loading credentials %s' % entry
-            f = open(os.path.join(DEFAULT_CREDENTIALS_DIR, entry), 'r')
-            providerId = f.readline().splitlines()[0]
-            print 'Located provider %s' % providerId
-            ep = cls.__registry.getEndPointForProvider(providerId)
-            ep._uuid = entry
-            ep.loadCredentials(pickle.load(f))
+            handle = open(os.path.join(DEFAULT_CREDENTIALS_DIR, entry), 'r')
+            provider_id = handle.readline().splitlines()[0]
+            print 'Located provider %s' % provider_id
+            endpoint = cls.__registry.get_endpoint_for_provider(provider_id)
+            endpoint.load_credentials(pickle.load(handle))
 
     @classmethod
-    def getAllEndPoints(cls):
-        return EndPoint.__registry.getEndPoints()
+    def get_all_endpoints(cls):
+        return EndPoint.__registry.get_endpoints()
 
     """
     Authenticate the client with its backend provider.
 
-    This step should call storeCredentials to persist its credentials
+    This step should call store_credentials to persist its credentials
     once the authentication is complete.
 
     TODO: Split this into initAuthentication and postAuthentication? That helps
@@ -78,16 +81,16 @@ class EndPoint:
 
     TODO: Error codes?
     """
-    def createFile(self, path, data):
-        raise NotImplementedError("createFile not implemented")
+    def create_file(self, path, data):
+        raise NotImplementedError("create_file not implemented")
 
     """
     Fetch data stored in the specified file/object on the backend provider.
 
     TODO: Error codes? File portions?
     """
-    def getFile(self, path):
-        raise NotImplementedError("getFile not implemented")
+    def get_file(self, path):
+        raise NotImplementedError("get_file not implemented")
 
     """
     Get user info from the backend provider, including:
@@ -96,8 +99,8 @@ class EndPoint:
 
     TODO: Come up with a consistent format for this data.
     """
-    def getInfo(self):
-        raise NotImplementedError("getInfo not implemented")
+    def get_info(self):
+        raise NotImplementedError("get_info not implemented")
 
     """
     Get a list of all files in a folder.
@@ -112,25 +115,25 @@ class EndPoint:
 
     TODO: Error codes? Batching?
     """
-    def removeFile(self, path):
-        raise NotImplementedError("removeFile not implemented")
+    def remove_file(self, path):
+        raise NotImplementedError("remove_file not implemented")
 
-    def loadCredentials(self, credentials):
-        raise NotImplementedError("loadCredentials not implemented")
+    def load_credentials(self, credentials):
+        raise NotImplementedError("load_credentials not implemented")
 
     """
     Save authorization keys or cookies after logging into the backend.
     """
     @classmethod
-    def storeCredentials(cls, credentials, _uuid=None):
+    def store_credentials(cls, credentials, _uuid=None):
         if _uuid is None:
             _uuid = uuid.uuid4().hex
             print _uuid
 
-        f = open(os.path.join(DEFAULT_CREDENTIALS_DIR, _uuid), 'w')
-        f.write(cls.getProviderId() + '\n')
-        pickle.dump(credentials, f)
-        f.close()
+        handle = open(os.path.join(DEFAULT_CREDENTIALS_DIR, _uuid), 'w')
+        handle.write(cls.get_providerid() + '\n')
+        pickle.dump(credentials, handle)
+        handle.close()
         return _uuid
 
     """
@@ -140,5 +143,5 @@ class EndPoint:
     TODO: Should this be made into a checker method?
     """
     @classmethod
-    def getProviderId(cls):
-        raise NotImplementedError("getProviderId not implemented")
+    def get_providerid(cls):
+        raise NotImplementedError("get_providerid not implemented")

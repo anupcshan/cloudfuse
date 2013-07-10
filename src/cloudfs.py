@@ -14,7 +14,7 @@ class CloudFSOperations(llfuse.Operations):
     """CloudFS implementation of llfuse Operations class."""
     def __init__(self):
         super(CloudFSOperations, self).__init__()
-        EndPoint.loadSavedEndPoints()
+        EndPoint.load_saved_endpoints()
 
     def statfs(self):
         stat_ = llfuse.StatvfsData()
@@ -22,8 +22,8 @@ class CloudFSOperations(llfuse.Operations):
         free_bytes = 0
         total_bytes = 0
 
-        for endpoint in EndPoint.getAllEndPoints():
-            info = endpoint.getInfo()
+        for endpoint in EndPoint.get_all_endpoints():
+            info = endpoint.get_info()
             free_bytes += info['freeBytes']
             total_bytes += info['totalBytes']
 

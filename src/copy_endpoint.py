@@ -18,8 +18,8 @@ GETINFO_URL = 'https://api.copy.com/rest/user'
 REQUEST_TOKEN_URL = 'https://api.copy.com/oauth/request'
 
 class CopyEndPoint(EndPoint):
-    def __init__(self):
-        EndPoint.__init__(self)
+    def __init__(self, _uuid = None):
+        EndPoint.__init__(self, _uuid)
         self._access_token = None
         self._consumer = oauth.Consumer(key=CONSUMER_KEY, secret=CONSUMER_SECRET)
         self._connection = httplib.HTTPSConnection('api.copy.com')
@@ -53,9 +53,9 @@ class CopyEndPoint(EndPoint):
 
         resp, content = client.request(ACCESS_TOKEN_URL, "POST")
         self._access_token = dict(urlparse.parse_qsl(content))
-        CopyEndPoint.storeCredentials(self._access_token, self._uuid)
+        CopyEndPoint.store_credentials(self._access_token, self._uuid)
 
-    def getInfo(self):
+    def get_info(self):
         params = {
             'oauth_version': "1.0",
             'oauth_nonce': oauth.generate_nonce(),
@@ -88,16 +88,16 @@ class CopyEndPoint(EndPoint):
         print userInfo
         return userInfo
 
-    def loadCredentials(self, credentials):
+    def load_credentials(self, credentials):
         self._access_token = credentials
 
     @classmethod
-    def getProviderId(self):
+    def get_providerid(self):
         return "copy.v1"
 
-CopyEndPoint.registerEndPoint()
+CopyEndPoint.register_endpoint()
 
 if __name__ == '__main__':
     cep = CopyEndPoint()
     cep.authenticate()
-    cep.getInfo()
+    cep.get_info()
