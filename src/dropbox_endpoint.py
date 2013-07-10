@@ -1,4 +1,5 @@
 #!/usr/bin/python
+"""Cloud endpoint which talks to dropbox.com"""
 
 from endpoint import EndPoint
 import httplib
@@ -17,10 +18,15 @@ GETINFO_URL = 'https://api.dropbox.com/1/account/info'
 REQUEST_TOKEN_URL = 'https://api.dropbox.com/1/oauth/request_token'
 
 class DropBoxEndPoint(EndPoint):
+    """
+    Dropbox.com endpoint based on documentation at
+    https://www.dropbox.com/developers/core/docs.
+    """
     def __init__(self, _uuid = None):
         EndPoint.__init__(self, _uuid)
         self._access_token = None
-        self._consumer = oauth.Consumer(key=CONSUMER_KEY, secret=CONSUMER_SECRET)
+        self._consumer = oauth.Consumer(key=CONSUMER_KEY,
+                secret=CONSUMER_SECRET)
         self._connection = httplib.HTTPSConnection('api.dropbox.com')
 
     def authenticate(self):
@@ -36,7 +42,8 @@ class DropBoxEndPoint(EndPoint):
         request_token = dict(urlparse.parse_qsl(content))
 
         print 'Go to the following link in your browser:'
-        print '%s?oauth_token=%s' % (AUTHORIZE_URL, request_token['oauth_token'])
+        print '%s?oauth_token=%s' % (AUTHORIZE_URL,
+                request_token['oauth_token'])
         print
 
         accepted = 'n'
@@ -69,26 +76,28 @@ class DropBoxEndPoint(EndPoint):
         self._connection.request('GET', GETINFO_URL, headers=req.to_header())
         response = self._connection.getresponse()
         info = json.loads(response.read())
-        userInfo = {
+        user_info = {
             'uid': info['uid'],
             'uname': info['email'],
             'totalBytes': info['quota_info']['quota'],
-            'usedBytes': info['quota_info']['shared'] + info['quota_info']['normal']
+            'usedBytes': info['quota_info']['shared'] +
+                info['quota_info']['normal']
         }
-        userInfo['freeBytes'] = userInfo['totalBytes'] - userInfo['usedBytes']
-        print userInfo
-        return userInfo
+        user_info['freeBytes'] = user_info['totalBytes'] - user_info['usedBytes']
+        print user_info
+        return user_info
 
     def load_credentials(self, credentials):
         self._access_token = credentials
 
     @classmethod
-    def get_providerid(self):
+    def get_providerid(cls):
         return "dropbox.v1"
 
 DropBoxEndPoint.register_endpoint()
 
 if __name__ == '__main__':
+    # pylint: disable-msg=C0103 
     dbep = DropBoxEndPoint()
     dbep.authenticate()
     dbep.get_info()

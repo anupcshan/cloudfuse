@@ -1,4 +1,5 @@
 #!/usr/bin/python
+"""Cloud endpoint which talks to copy.com"""
 
 from endpoint import EndPoint
 import httplib
@@ -18,10 +19,15 @@ GETINFO_URL = 'https://api.copy.com/rest/user'
 REQUEST_TOKEN_URL = 'https://api.copy.com/oauth/request'
 
 class CopyEndPoint(EndPoint):
+    """
+    Copy.com endpoint based on documentation at
+    https://www.copy.com/developer/documentation.
+    """
     def __init__(self, _uuid = None):
         EndPoint.__init__(self, _uuid)
         self._access_token = None
-        self._consumer = oauth.Consumer(key=CONSUMER_KEY, secret=CONSUMER_SECRET)
+        self._consumer = oauth.Consumer(key=CONSUMER_KEY,
+                secret=CONSUMER_SECRET)
         self._connection = httplib.HTTPSConnection('api.copy.com')
 
     def authenticate(self):
@@ -38,7 +44,8 @@ class CopyEndPoint(EndPoint):
         request_token = dict(urlparse.parse_qsl(content))
 
         print 'Go to the following link in your browser:'
-        print '%s?oauth_token=%s' % (AUTHORIZE_URL, request_token['oauth_token'])
+        print '%s?oauth_token=%s' % (AUTHORIZE_URL,
+                request_token['oauth_token'])
         print
 
         accepted = 'n'
@@ -78,26 +85,28 @@ class CopyEndPoint(EndPoint):
         print response
 
         info = json.loads(response)
-        userInfo = {
+        user_info = {
             'uid': info['user_id'],
             'uname': info['email'],
             'totalBytes': info['storage']['quota'],
-            'usedBytes': info['storage']['used']
+            'usedBytes': info['storage']['used'],
+            'freeBytes': 0
         }
-        userInfo['freeBytes'] = userInfo['totalBytes'] - userInfo['usedBytes']
-        print userInfo
-        return userInfo
+        user_info['freeBytes'] = user_info['totalBytes'] - user_info['usedBytes']
+        print user_info
+        return user_info
 
     def load_credentials(self, credentials):
         self._access_token = credentials
 
     @classmethod
-    def get_providerid(self):
+    def get_providerid(cls):
         return "copy.v1"
 
 CopyEndPoint.register_endpoint()
 
 if __name__ == '__main__':
+    # pylint: disable-msg=C0103 
     cep = CopyEndPoint()
     cep.authenticate()
     cep.get_info()
