@@ -1,43 +1,46 @@
 #!/usr/bin/python
+"""CloudFS FUSE filesystem."""
 
 import llfuse
 import sys
 from endpoint import EndPoint
+
+# pylint: disable-msg=W0611 
 from dropbox_endpoint import DropBoxEndPoint
 from copy_endpoint import CopyEndPoint
+# pylint: enable-msg=W0611 
 
 class CloudFSOperations(llfuse.Operations):
+    """CloudFS implementation of llfuse Operations class."""
     def __init__(self):
+        super(CloudFSOperations, self).__init__()
         EndPoint.loadSavedEndPoints()
 
     def statfs(self):
         stat_ = llfuse.StatvfsData()
 
-        freeBytes = 0
-        totalBytes = 0
-        usedBytes = 0
+        free_bytes = 0
+        total_bytes = 0
 
         for endpoint in EndPoint.getAllEndPoints():
             info = endpoint.getInfo()
-            freeBytes += info['freeBytes']
-            totalBytes += info['totalBytes']
-            usedBytes += info['usedBytes']
+            free_bytes += info['freeBytes']
+            total_bytes += info['totalBytes']
 
         stat_.f_bsize = 512
         stat_.f_frsize = 512
 
-        size = totalBytes
+        size = total_bytes
         stat_.f_blocks = size // stat_.f_frsize
-        stat_.f_bfree = freeBytes // stat_.f_frsize
+        stat_.f_bfree = free_bytes // stat_.f_frsize
         stat_.f_bavail = stat_.f_bfree
 
         stat_.f_favail = stat_.f_ffree = stat_.f_files = 10000
 
         return stat_
-    pass
 
 if __name__ == '__main__':
-    
+    # pylint: disable-msg=C0103 
     if len(sys.argv) != 2:
         raise SystemExit('Usage: %s <mountpoint>' % sys.argv[0])
     
