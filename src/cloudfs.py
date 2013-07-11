@@ -5,10 +5,10 @@ import llfuse
 import sys
 from endpoint import EndPoint
 
-# pylint: disable-msg=W0611 
+# pylint: disable-msg=W0611
 from dropbox_endpoint import DropBoxEndPoint
 from copy_endpoint import CopyEndPoint
-# pylint: enable-msg=W0611 
+# pylint: enable-msg=W0611
 
 class CloudFSOperations(llfuse.Operations):
     """CloudFS implementation of llfuse Operations class."""

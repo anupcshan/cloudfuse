@@ -5,8 +5,7 @@ import errno
 import os
 import pickle
 import uuid
-
-DEFAULT_CREDENTIALS_DIR = os.environ['HOME'] + '/.cloudfs/credentials'
+from config import Config
 
 class EndPoint:
     """
@@ -16,6 +15,7 @@ class EndPoint:
     """
     __endpoint_classes = {}
     __endpoints = []
+    _config = Config()
 
     def __init__(self, _uuid = None):
         if _uuid is None:
@@ -28,7 +28,7 @@ class EndPoint:
         Create credentials directory if it does not exist.
         """
         try:
-            os.makedirs(DEFAULT_CREDENTIALS_DIR)
+            os.makedirs(EndPoint._config.get_credentials_dir())
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
@@ -60,9 +60,10 @@ class EndPoint:
         Go through credentials directory and instantiate all saved credentials.
         """
         cls.ensure_credentialsdir_exists()
-        for entry in os.listdir(DEFAULT_CREDENTIALS_DIR):
+        for entry in os.listdir(EndPoint._config.get_credentials_dir()):
             print 'Loading credentials %s' % entry
-            handle = open(os.path.join(DEFAULT_CREDENTIALS_DIR, entry), 'r')
+            handle = open(os.path.join(
+                        EndPoint._config.get_credentials_dir(), entry), 'r')
             provider_id = handle.readline().splitlines()[0]
             print 'Located provider %s' % provider_id
             endpoint = EndPoint._get_endpoint_for_provider(provider_id)
@@ -147,7 +148,8 @@ class EndPoint:
             _uuid = uuid.uuid4().hex
             print _uuid
 
-        handle = open(os.path.join(DEFAULT_CREDENTIALS_DIR, _uuid), 'w')
+        handle = open(os.path.join(
+                    EndPoint._config.get_credentials_dir(), _uuid), 'w')
         handle.write(cls.get_providerid() + '\n')
         pickle.dump(credentials, handle)
         handle.close()
