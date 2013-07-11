@@ -21,6 +21,7 @@ class EndPoint:
         if _uuid is None:
             _uuid = uuid.uuid4().hex
         self._uuid = _uuid
+        self._cloudfs_root_dir = "/_cloudfs"
 
     @classmethod
     def ensure_credentialsdir_exists(cls):
@@ -96,6 +97,18 @@ class EndPoint:
         TODO: Error codes?
         """
         raise NotImplementedError("create_file not implemented")
+
+    def safe_create_root_folder(self):
+        """
+        Create empty root folder if not present.
+        """
+        self.create_folder_if_absent(self._cloudfs_root_dir)
+
+    def create_folder_if_absent(self, path):
+        """
+        Create a folder at the specified path if it is not already present
+        """
+        raise NotImplementedError("create_folder_if_absent not implemented")
 
     def get_file(self, path):
         """

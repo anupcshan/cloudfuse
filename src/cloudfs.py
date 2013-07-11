@@ -39,6 +39,14 @@ class CloudFSOperations(llfuse.Operations):
 
         return stat_
 
+    def check_if_filesystem_exists(self):
+        """
+        Return true if CloudFS is detected in any of the backend providers.
+        """
+        for endpoint in EndPoint.get_all_endpoints():
+            endpoint.safe_create_root_folder()
+            endpoint.get_file('METADATA')
+
 if __name__ == '__main__':
     # pylint: disable-msg=C0103 
     if len(sys.argv) != 2:
@@ -46,8 +54,10 @@ if __name__ == '__main__':
     
     mountpoint = sys.argv[1]
     operations = CloudFSOperations()
+
+    #operations.check_if_filesystem_exists()
     
-    llfuse.init(operations, mountpoint, [ b'fsname=cloudfs' ])
+    llfuse.init(operations, mountpoint, [ b'fsname=CloudFS' ])
     
     try:
         llfuse.main(single=False)
