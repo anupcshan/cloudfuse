@@ -17,6 +17,8 @@ ACCESS_TOKEN_URL = 'https://api.copy.com/oauth/access'
 AUTHORIZE_URL = 'https://www.copy.com/applications/authorize'
 GETINFO_URL = 'https://api.copy.com/rest/user'
 REQUEST_TOKEN_URL = 'https://api.copy.com/oauth/request'
+GET_FOLDER_METADATA_URL = 'https://api.copy.com/rest/meta/copy/%s'
+CREATE_FOLDER_URL = 'https://api.copy.com/rest/files/%s'
 
 class CopyEndPoint(EndPoint):
     """
@@ -63,24 +65,8 @@ class CopyEndPoint(EndPoint):
         CopyEndPoint.store_credentials(self._access_token, self._uuid)
 
     def get_info(self):
-        params = {
-            'oauth_version': "1.0",
-            'oauth_nonce': oauth.generate_nonce(),
-            'oauth_timestamp': int(time.time()),
-            'oauth_token': self._access_token['oauth_token'],
-            'oauth_consumer_key': CONSUMER_KEY
-        }
-
-        token = oauth.Token(key=self._access_token['oauth_token'],
-                secret=self._access_token['oauth_token_secret'])
-        req = oauth.Request(method='GET', url=GETINFO_URL, parameters=params)
-        signature_method = oauth.SignatureMethod_HMAC_SHA1()
-        req.sign_request(signature_method, self._consumer, token)
-
-        headers = req.to_header()
-        # Turns out the API rejects any request without this header :\
-        headers.update({'X-API-Version': '1.0'})
-        self._connection.request('GET', GETINFO_URL, headers=headers)
+        self._connection.request('GET', GETINFO_URL,
+                headers=self.get_signed_request(GETINFO_URL))
         response = self._connection.getresponse().read()
         print response
 
@@ -98,6 +84,50 @@ class CopyEndPoint(EndPoint):
 
     def load_credentials(self, credentials):
         self._access_token = credentials
+
+    def if_folder_exists(self, path):
+        url = GET_FOLDER_METADATA_URL % path
+        self._connection.request('GET', url,
+                headers=self.get_signed_request(url))
+        response = self._connection.getresponse().read()
+        info = json.loads(response)
+        print info
+
+        if 'type' in info and info['type'] == 'dir' and 'error' not in info:
+            return True
+
+        return False
+
+    def create_folder(self, path):
+        url = CREATE_FOLDER_URL % path
+        print url
+        self._connection.request('POST', url,
+                headers=self.get_signed_request(url, 'POST'))
+        response = self._connection.getresponse().read()
+        info = json.loads(response)
+        print info
+
+    def get_signed_request(self, url, method='GET'):
+        """
+        Return signed HTTP request headers as a map.
+        """
+        params = {
+            'oauth_version': "1.0",
+            'oauth_nonce': oauth.generate_nonce(),
+            'oauth_timestamp': int(time.time()),
+            'oauth_token': self._access_token['oauth_token'],
+            'oauth_consumer_key': CONSUMER_KEY
+        }
+
+        token = oauth.Token(key=self._access_token['oauth_token'],
+                secret=self._access_token['oauth_token_secret'])
+        req = oauth.Request(method=method, url=url, parameters=params)
+        signature_method = oauth.SignatureMethod_HMAC_SHA1()
+        req.sign_request(signature_method, self._consumer, token)
+
+        headers = req.to_header()
+        headers.update({'X-API-Version': '1.0'})
+        return headers
 
     @classmethod
     def get_providerid(cls):

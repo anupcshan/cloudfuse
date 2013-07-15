@@ -21,7 +21,7 @@ class EndPoint:
         if _uuid is None:
             _uuid = uuid.uuid4().hex
         self._uuid = _uuid
-        self._cloudfs_root_dir = "/_cloudfs"
+        self._cloudfs_root_dir = "_cloudfs"
 
     @classmethod
     def ensure_credentialsdir_exists(cls):
@@ -89,6 +89,14 @@ class EndPoint:
         """
         raise NotImplementedError("authenticate not implemented")
 
+    def create_folder(self, path):
+        """
+        Create a new folder in the specified path on the backend provider.
+
+        TODO: Error codes?
+        """
+        raise NotImplementedError("create_folder not implemented")
+
     def create_file(self, path, data):
         """
         Upload data and create a new file/object in the specified path/namespace
@@ -104,11 +112,18 @@ class EndPoint:
         """
         self.create_folder_if_absent(self._cloudfs_root_dir)
 
+    def if_folder_exists(self, path):
+        """
+        Checks if folder at given path exists on backend provider.
+        """
+        raise NotImplementedError("if_folder_exists not implemented")
+
     def create_folder_if_absent(self, path):
         """
         Create a folder at the specified path if it is not already present
         """
-        raise NotImplementedError("create_folder_if_absent not implemented")
+        if not self.if_folder_exists(path):
+            self.create_folder(path)
 
     def get_file(self, path):
         """
