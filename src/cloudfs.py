@@ -45,7 +45,10 @@ class CloudFSOperations(llfuse.Operations):
         """
         for endpoint in EndPoint.get_all_endpoints():
             endpoint.safe_create_root_folder()
-            endpoint.get_file('METADATA')
+            if endpoint.if_file_exists('METADATA'):
+                return True
+
+        return False
 
 if __name__ == '__main__':
     # pylint: disable-msg=C0103 
@@ -55,7 +58,7 @@ if __name__ == '__main__':
     mountpoint = sys.argv[1]
     operations = CloudFSOperations()
 
-    #operations.check_if_filesystem_exists()
+    operations.check_if_filesystem_exists()
     
     llfuse.init(operations, mountpoint, [ b'fsname=CloudFS' ])
     

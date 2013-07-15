@@ -17,7 +17,7 @@ ACCESS_TOKEN_URL = 'https://api.copy.com/oauth/access'
 AUTHORIZE_URL = 'https://www.copy.com/applications/authorize'
 GETINFO_URL = 'https://api.copy.com/rest/user'
 REQUEST_TOKEN_URL = 'https://api.copy.com/oauth/request'
-GET_FOLDER_METADATA_URL = 'https://api.copy.com/rest/meta/copy/%s'
+GET_PATH_METADATA_URL = 'https://api.copy.com/rest/meta/copy/%s'
 CREATE_FOLDER_URL = 'https://api.copy.com/rest/files/%s'
 
 class CopyEndPoint(EndPoint):
@@ -85,8 +85,21 @@ class CopyEndPoint(EndPoint):
     def load_credentials(self, credentials):
         self._access_token = credentials
 
+    def if_file_exists(self, path):
+        url = GET_PATH_METADATA_URL % path
+        self._connection.request('GET', url,
+                headers=self.get_signed_request(url))
+        response = self._connection.getresponse().read()
+        info = json.loads(response)
+        print info
+
+        if 'type' in info and info['type'] == 'file' and 'error' not in info:
+            return True
+
+        return False
+
     def if_folder_exists(self, path):
-        url = GET_FOLDER_METADATA_URL % path
+        url = GET_PATH_METADATA_URL % path
         self._connection.request('GET', url,
                 headers=self.get_signed_request(url))
         response = self._connection.getresponse().read()

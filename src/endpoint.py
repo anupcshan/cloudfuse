@@ -118,6 +118,12 @@ class EndPoint:
         """
         raise NotImplementedError("if_folder_exists not implemented")
 
+    def if_file_exists(self, path):
+        """
+        Checks if file at given path exists on backend provider.
+        """
+        raise NotImplementedError("if_file_exists not implemented")
+
     def create_folder_if_absent(self, path):
         """
         Create a folder at the specified path if it is not already present
