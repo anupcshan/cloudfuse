@@ -1,8 +1,8 @@
 #!/usr/bin/python
 """CloudFS FUSE filesystem."""
 
+import argparse
 import llfuse
-import sys
 from endpoint import EndPoint
 
 # pylint: disable-msg=W0611
@@ -52,15 +52,24 @@ class CloudFSOperations(llfuse.Operations):
 
 if __name__ == '__main__':
     # pylint: disable-msg=C0103 
-    if len(sys.argv) != 2:
-        raise SystemExit('Usage: %s <mountpoint>' % sys.argv[0])
-    
-    mountpoint = sys.argv[1]
+    parser = argparse.ArgumentParser(prog='CloudFS')
+    parser.add_argument('-c', '--create', action='store_true',
+            help='Create a filesystem if it does not exist')
+    parser.add_argument('mountpoint', help='Root directory of mounted CloudFS')
+    args = parser.parse_args()
+
     operations = CloudFSOperations()
 
-    operations.check_if_filesystem_exists()
+    if not operations.check_if_filesystem_exists():
+        if args.create:
+            #TODO: Create filesystem
+            pass
+        else:
+            raise Exception('CloudFS not detected in backend storage providers.'
+                    ' Please rerun the command with --create to automatically'
+                    ' create a filesystem.')
     
-    llfuse.init(operations, mountpoint, [ b'fsname=CloudFS' ])
+    llfuse.init(operations, args.mountpoint, [ b'fsname=CloudFS' ])
     
     try:
         llfuse.main(single=False)
