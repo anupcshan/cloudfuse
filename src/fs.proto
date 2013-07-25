@@ -1,0 +1,62 @@
+message XAttrs {
+  // See http://linux.die.net/man/2/stat for a list of POSIX xattrs
+  // Add extra attrs for compression(?), encryption, redundancy etc.
+}
+
+message Link {
+  enum Backend {
+    BOX = 1;
+    DROPBOX = 2;
+    // ….
+  }
+
+  required Backend backend = 1;
+
+  // This is a backend-specific URI
+  required string uri = 2;
+}
+
+// Location of a file fragment
+message Chunk {
+  // Cannot have chunks > 4GB. I doubt this will be an issue as most backends have a file size limit
+  // on the order of 100s of MBs.
+  required int32 size = 1;
+
+  // This chunk represents `start` to `start + size - 1` byte range of the file.
+  required int64 start = 2;
+
+  // Store a hash of the chunk
+  enum HashType {
+    SHA256 = 0;
+    CRC32 = 1;    // For speed on mobile devices?
+    // ….
+  }
+  required string hash = 3;
+  required HashType hashType = 4 [default = SHA256];
+
+  // TODO: Represent replicated chunks here?
+  required Link link = 5;
+}
+
+message Leaf {
+  required XAttrs xattr = 1;
+  repeated Chunk chunks = 2;
+}
+
+message Node {
+  repeated Node subdirectories = 1;
+  repeated Leaf files = 2;
+  required XAttrs xattr = 3;
+
+  // Points to an external “device” which contains this subtree
+  optional Link pointer = 4;
+
+  // TODO: Is there a reasonable mechanism to count the number of nodes in a particular subtree to
+  // know when the subtree should be broken off into an external store (based on a threshold)?
+  // Similarly, when is a subtree merged back into its parent tree?
+}
+
+message FileSystem {
+  required Node root = 1;
+  // TODO: Store a list of all associated backends here?
+}
