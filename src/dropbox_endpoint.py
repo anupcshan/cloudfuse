@@ -16,6 +16,7 @@ ACCESS_TOKEN_URL = 'https://api.dropbox.com/1/oauth/access_token'
 AUTHORIZE_URL = 'https://www.dropbox.com/1/oauth/authorize'
 GETINFO_URL = 'https://api.dropbox.com/1/account/info'
 REQUEST_TOKEN_URL = 'https://api.dropbox.com/1/oauth/request_token'
+GET_PATH_METADATA_URL = 'https://api.dropbox.com/1/metadata/dropbox/%s'
 
 class DropBoxEndPoint(EndPoint):
     """
@@ -89,6 +90,40 @@ class DropBoxEndPoint(EndPoint):
 
     def load_credentials(self, credentials):
         self._access_token = credentials
+
+    def if_folder_exists(self, path):
+        url = GET_PATH_METADATA_URL % path
+        self._connection.request('GET', url,
+                headers=self.get_signed_request(url))
+        response = self._connection.getresponse().read()
+        info = json.loads(response)
+        print info
+
+        if 'is_dir' in info and info['is_dir'] and 'error' not in info:
+            return True
+
+        return False
+
+    def get_signed_request(self, url, method='GET'):
+        """
+        Return signed HTTP request headers as a map.
+        """
+        params = {
+            'oauth_version': "1.0",
+            'oauth_nonce': oauth.generate_nonce(),
+            'oauth_timestamp': int(time.time()),
+            'oauth_token': self._access_token['oauth_token'],
+            'oauth_consumer_key': CONSUMER_KEY
+        }
+
+        token = oauth.Token(key=self._access_token['oauth_token'],
+                secret=self._access_token['oauth_token_secret'])
+        req = oauth.Request(method=method, url=url, parameters=params)
+        signature_method = oauth.SignatureMethod_HMAC_SHA1()
+        req.sign_request(signature_method, self._consumer, token)
+
+        headers = req.to_header()
+        return headers
 
     @classmethod
     def get_providerid(cls):
