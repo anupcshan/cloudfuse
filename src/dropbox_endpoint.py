@@ -17,6 +17,7 @@ AUTHORIZE_URL = 'https://www.dropbox.com/1/oauth/authorize'
 GETINFO_URL = 'https://api.dropbox.com/1/account/info'
 REQUEST_TOKEN_URL = 'https://api.dropbox.com/1/oauth/request_token'
 GET_PATH_METADATA_URL = 'https://api.dropbox.com/1/metadata/dropbox/%s'
+CREATE_FOLDER_URL = 'https://api.dropbox.com/1/fileops/create_folder?path=%s&root=dropbox'
 
 class DropBoxEndPoint(EndPoint):
     """
@@ -91,6 +92,19 @@ class DropBoxEndPoint(EndPoint):
     def load_credentials(self, credentials):
         self._access_token = credentials
 
+    def if_file_exists(self, path):
+        url = GET_PATH_METADATA_URL % path
+        self._connection.request('GET', url,
+                headers=self.get_signed_request(url))
+        response = self._connection.getresponse().read()
+        info = json.loads(response)
+        print info
+
+        if 'is_dir' in info and info['is_dir'] != True and 'error' not in info:
+            return True
+
+        return False
+
     def if_folder_exists(self, path):
         url = GET_PATH_METADATA_URL % path
         self._connection.request('GET', url,
@@ -103,6 +117,15 @@ class DropBoxEndPoint(EndPoint):
             return True
 
         return False
+
+    def create_folder(self, path):
+        url = CREATE_FOLDER_URL % path
+        print url
+        self._connection.request('POST', url,
+                headers=self.get_signed_request(url, 'POST'))
+        response = self._connection.getresponse().read()
+        info = json.loads(response)
+        print info
 
     def get_signed_request(self, url, method='GET'):
         """
