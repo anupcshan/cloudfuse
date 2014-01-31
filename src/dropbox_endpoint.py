@@ -2,7 +2,7 @@
 """Cloud endpoint which talks to dropbox.com"""
 
 from endpoint import EndPoint
-import httplib
+import httplib2
 import json
 import oauth2 as oauth
 import time
@@ -29,7 +29,7 @@ class DropBoxEndPoint(EndPoint):
         self._access_token = None
         self._consumer = oauth.Consumer(key=CONSUMER_KEY,
                 secret=CONSUMER_SECRET)
-        self._connection = httplib.HTTPSConnection('api.dropbox.com')
+        self._connection = httplib2.Http()
 
     def authenticate(self):
         if self._access_token is not None:
@@ -75,9 +75,8 @@ class DropBoxEndPoint(EndPoint):
         signature_method = oauth.SignatureMethod_HMAC_SHA1()
         req.sign_request(signature_method, self._consumer, token)
 
-        self._connection.request('GET', GETINFO_URL, headers=req.to_header())
-        response = self._connection.getresponse()
-        info = json.loads(response.read())
+        _, response = self._connection.request(method='GET', uri=GETINFO_URL, headers=req.to_header())
+        info = json.loads(response)
         user_info = {
             'uid': info['uid'],
             'uname': info['email'],
@@ -94,9 +93,8 @@ class DropBoxEndPoint(EndPoint):
 
     def if_file_exists(self, path):
         url = GET_PATH_METADATA_URL % path
-        self._connection.request('GET', url,
+        _, response = self._connection.request(method='GET', uri=url,
                 headers=self.get_signed_request(url))
-        response = self._connection.getresponse().read()
         info = json.loads(response)
         print info
 
@@ -107,9 +105,8 @@ class DropBoxEndPoint(EndPoint):
 
     def if_folder_exists(self, path):
         url = GET_PATH_METADATA_URL % path
-        self._connection.request('GET', url,
+        _, response = self._connection.request(method='GET', uri=url,
                 headers=self.get_signed_request(url))
-        response = self._connection.getresponse().read()
         info = json.loads(response)
         print info
 
@@ -121,9 +118,8 @@ class DropBoxEndPoint(EndPoint):
     def create_folder(self, path):
         url = CREATE_FOLDER_URL % path
         print url
-        self._connection.request('POST', url,
+        _, response = self._connection.request(method='POST', uri=url,
                 headers=self.get_signed_request(url, 'POST'))
-        response = self._connection.getresponse().read()
         info = json.loads(response)
         print info
 

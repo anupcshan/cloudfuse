@@ -2,7 +2,7 @@
 """Cloud endpoint which talks to copy.com"""
 
 from endpoint import EndPoint
-import httplib
+import httplib2
 import json
 import oauth2 as oauth
 import time
@@ -30,7 +30,7 @@ class CopyEndPoint(EndPoint):
         self._access_token = None
         self._consumer = oauth.Consumer(key=CONSUMER_KEY,
                 secret=CONSUMER_SECRET)
-        self._connection = httplib.HTTPSConnection('api.copy.com')
+        self._connection = httplib2.Http()
 
     def authenticate(self):
         if self._access_token is not None:
@@ -65,9 +65,8 @@ class CopyEndPoint(EndPoint):
         CopyEndPoint.store_credentials(self._access_token, self._uuid)
 
     def get_info(self):
-        self._connection.request('GET', GETINFO_URL,
+        _, response = self._connection.request(method='GET', uri=GETINFO_URL,
                 headers=self.get_signed_request(GETINFO_URL))
-        response = self._connection.getresponse().read()
         print response
 
         info = json.loads(response)
@@ -87,9 +86,8 @@ class CopyEndPoint(EndPoint):
 
     def if_file_exists(self, path):
         url = GET_PATH_METADATA_URL % path
-        self._connection.request('GET', url,
+        _, response = self._connection.request(method='GET', uri=url,
                 headers=self.get_signed_request(url))
-        response = self._connection.getresponse().read()
         info = json.loads(response)
         print info
 
@@ -100,9 +98,8 @@ class CopyEndPoint(EndPoint):
 
     def if_folder_exists(self, path):
         url = GET_PATH_METADATA_URL % path
-        self._connection.request('GET', url,
+        _, response = self._connection.request(method='GET', uri=url,
                 headers=self.get_signed_request(url))
-        response = self._connection.getresponse().read()
         info = json.loads(response)
         print info
 
@@ -114,9 +111,8 @@ class CopyEndPoint(EndPoint):
     def create_folder(self, path):
         url = CREATE_FOLDER_URL % path
         print url
-        self._connection.request('POST', url,
+        _, response = self._connection.request(method='POST', uri=url,
                 headers=self.get_signed_request(url, 'POST'))
-        response = self._connection.getresponse().read()
         info = json.loads(response)
         print info
 
