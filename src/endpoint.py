@@ -106,6 +106,14 @@ class EndPoint:
         """
         raise NotImplementedError("create_file not implemented")
 
+    def safe_create_filesystem(self):
+        """
+        Create empty filesystem structure
+        """
+        self.safe_create_root_folder()
+        self.create_folder_if_absent(self._cloudfs_root_dir + '/structure')
+        self.create_folder_if_absent(self._cloudfs_root_dir + '/objects')
+
     def safe_create_root_folder(self):
         """
         Create empty root folder if not present.

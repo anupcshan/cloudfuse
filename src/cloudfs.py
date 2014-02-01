@@ -44,11 +44,9 @@ class CloudFSOperations(llfuse.Operations):
         Return true if CloudFS is detected in any of the backend providers.
         """
         for endpoint in EndPoint.get_all_endpoints():
-            endpoint.safe_create_root_folder()
-            if endpoint.if_file_exists('METADATA'):
-                return True
+            endpoint.safe_create_filesystem()
 
-        return False
+        return True
 
 if __name__ == '__main__':
     # pylint: disable-msg=C0103 
