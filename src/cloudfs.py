@@ -39,33 +39,23 @@ class CloudFSOperations(llfuse.Operations):
 
         return stat_
 
-    def check_if_filesystem_exists(self):
+    def auto_create_filesystem(self):
         """
-        Return true if CloudFS is detected in any of the backend providers.
+        Automatically setup filesystem structure on backend providers.
         """
         for endpoint in EndPoint.get_all_endpoints():
             endpoint.safe_create_filesystem()
 
-        return True
-
 if __name__ == '__main__':
     # pylint: disable-msg=C0103 
     parser = argparse.ArgumentParser(prog='CloudFS')
-    parser.add_argument('-c', '--create', action='store_true',
-            help='Create a filesystem if it does not exist')
     parser.add_argument('mountpoint', help='Root directory of mounted CloudFS')
     args = parser.parse_args()
 
     operations = CloudFSOperations()
-
-    if not operations.check_if_filesystem_exists():
-        if args.create:
-            #TODO: Create filesystem
-            pass
-        else:
-            raise Exception('CloudFS not detected in backend storage providers.'
-                    ' Please rerun the command with --create to automatically'
-                    ' create a filesystem.')
+    operations.auto_create_filesystem()
+    # TODO: Load filesystem structure from backends and export them
+    #       using FUSE.
     
     llfuse.init(operations, args.mountpoint, [ b'fsname=CloudFS' ])
     
