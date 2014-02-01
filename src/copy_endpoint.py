@@ -4,10 +4,11 @@
 from endpoint import EndPoint
 import httplib2
 import json
+import logging
 import oauth2 as oauth
 import time
-import urlparse
 import urllib
+import urlparse
 
 # Figure out a way to store these securely instead of having it open on github.
 CONSUMER_KEY = 'L9dKepamNkSfkkAGA2TGCFr750cOFc0b'
@@ -31,6 +32,7 @@ class CopyEndPoint(EndPoint):
         self._consumer = oauth.Consumer(key=CONSUMER_KEY,
                 secret=CONSUMER_SECRET)
         self._connection = httplib2.Http()
+        self._logger = logging.getLogger('CopyEndPoint')
 
     def authenticate(self):
         if self._access_token is not None:
@@ -67,7 +69,7 @@ class CopyEndPoint(EndPoint):
     def get_info(self):
         _, response = self._connection.request(method='GET', uri=GETINFO_URL,
                 headers=self.get_signed_request(GETINFO_URL))
-        print response
+        self._logger.debug(response)
 
         info = json.loads(response)
         user_info = {
@@ -78,7 +80,7 @@ class CopyEndPoint(EndPoint):
             'freeBytes': 0
         }
         user_info['freeBytes'] = user_info['totalBytes'] - user_info['usedBytes']
-        print user_info
+        self._logger.debug(user_info)
         return user_info
 
     def load_credentials(self, credentials):
@@ -89,7 +91,7 @@ class CopyEndPoint(EndPoint):
         _, response = self._connection.request(method='GET', uri=url,
                 headers=self.get_signed_request(url))
         info = json.loads(response)
-        print info
+        self._logger.debug(info)
 
         if 'type' in info and info['type'] == 'file' and 'error' not in info:
             return True
@@ -101,7 +103,7 @@ class CopyEndPoint(EndPoint):
         _, response = self._connection.request(method='GET', uri=url,
                 headers=self.get_signed_request(url))
         info = json.loads(response)
-        print info
+        self._logger.debug(info)
 
         if 'type' in info and info['type'] == 'dir' and 'error' not in info:
             return True
@@ -110,11 +112,11 @@ class CopyEndPoint(EndPoint):
 
     def create_folder(self, path):
         url = CREATE_FOLDER_URL % path
-        print url
+        self._logger.debug(url)
         _, response = self._connection.request(method='POST', uri=url,
                 headers=self.get_signed_request(url, 'POST'))
         info = json.loads(response)
-        print info
+        self._logger.debug(info)
 
     def get_signed_request(self, url, method='GET'):
         """

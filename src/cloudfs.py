@@ -3,6 +3,7 @@
 
 import argparse
 import llfuse
+import logging
 from endpoint import EndPoint
 
 # pylint: disable-msg=W0611
@@ -49,8 +50,16 @@ class CloudFSOperations(llfuse.Operations):
 if __name__ == '__main__':
     # pylint: disable-msg=C0103 
     parser = argparse.ArgumentParser(prog='CloudFS')
+    parser.add_argument('-v', '--verbose', action='store_true',
+        help='Enable verbose logging')
     parser.add_argument('mountpoint', help='Root directory of mounted CloudFS')
     args = parser.parse_args()
+
+    logLevel = logging.WARNING
+    if args.verbose:
+      logLevel = logging.DEBUG
+
+    logging.basicConfig(level=logLevel)
 
     operations = CloudFSOperations()
     operations.auto_create_filesystem()

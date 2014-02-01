@@ -4,6 +4,7 @@
 from endpoint import EndPoint
 import httplib2
 import json
+import logging
 import oauth2 as oauth
 import time
 import urlparse
@@ -30,6 +31,7 @@ class DropBoxEndPoint(EndPoint):
         self._consumer = oauth.Consumer(key=CONSUMER_KEY,
                 secret=CONSUMER_SECRET)
         self._connection = httplib2.Http()
+        self._logger = logging.getLogger('DropBoxEndPoint')
 
     def authenticate(self):
         if self._access_token is not None:
@@ -85,7 +87,7 @@ class DropBoxEndPoint(EndPoint):
                 info['quota_info']['normal']
         }
         user_info['freeBytes'] = user_info['totalBytes'] - user_info['usedBytes']
-        print user_info
+        self._logger.debug(user_info)
         return user_info
 
     def load_credentials(self, credentials):
@@ -96,7 +98,7 @@ class DropBoxEndPoint(EndPoint):
         _, response = self._connection.request(method='GET', uri=url,
                 headers=self.get_signed_request(url))
         info = json.loads(response)
-        print info
+        self._logger.debug(info)
 
         if 'is_dir' in info and info['is_dir'] != True and 'error' not in info:
             return True
@@ -108,7 +110,7 @@ class DropBoxEndPoint(EndPoint):
         _, response = self._connection.request(method='GET', uri=url,
                 headers=self.get_signed_request(url))
         info = json.loads(response)
-        print info
+        self._logger.debug(info)
 
         if 'is_dir' in info and info['is_dir'] and 'error' not in info:
             return True
@@ -117,11 +119,11 @@ class DropBoxEndPoint(EndPoint):
 
     def create_folder(self, path):
         url = CREATE_FOLDER_URL % path
-        print url
+        self._logger.debug(url)
         _, response = self._connection.request(method='POST', uri=url,
                 headers=self.get_signed_request(url, 'POST'))
         info = json.loads(response)
-        print info
+        self._logger.debug(info)
 
     def get_signed_request(self, url, method='GET'):
         """

@@ -2,6 +2,7 @@
 """Abstract cloud endpoint."""
 
 import errno
+import logging
 import os
 import pickle
 import uuid
@@ -16,6 +17,7 @@ class EndPoint:
     __endpoint_classes = {}
     __endpoints = []
     _config = Config()
+    _logger = logging.getLogger('EndPoint')
 
     def __init__(self, _uuid = None):
         if _uuid is None:
@@ -42,9 +44,9 @@ class EndPoint:
         This method should be called by the implementation while its module is loaded.
         """
         provider_id = cls.get_providerid()
-        print 'Registering endpoint with id %s' % provider_id
+        EndPoint._logger.info('Registering endpoint with id %s' % provider_id)
         EndPoint.__endpoint_classes[provider_id] = cls
-        print 'Total endpointclasses %d' % len(EndPoint.__endpoint_classes)
+        EndPoint._logger.info('Total endpointclasses %d' % len(EndPoint.__endpoint_classes))
 
     @classmethod
     def _get_endpoint_for_provider(cls, provider_id, _uuid = None):
@@ -62,11 +64,11 @@ class EndPoint:
         """
         cls.ensure_credentialsdir_exists()
         for entry in os.listdir(EndPoint._config.get_credentials_dir()):
-            print 'Loading credentials %s' % entry
+            EndPoint._logger.info('Loading credentials %s' % entry)
             handle = open(os.path.join(
                         EndPoint._config.get_credentials_dir(), entry), 'r')
             provider_id = handle.readline().splitlines()[0]
-            print 'Located provider %s' % provider_id
+            EndPoint._logger.info('Located provider %s' % provider_id)
             endpoint = EndPoint._get_endpoint_for_provider(provider_id)
             endpoint.load_credentials(pickle.load(handle))
 
@@ -188,7 +190,6 @@ class EndPoint:
         """
         if _uuid is None:
             _uuid = uuid.uuid4().hex
-            print _uuid
 
         handle = open(os.path.join(
                     EndPoint._config.get_credentials_dir(), _uuid), 'w')
