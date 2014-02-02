@@ -2,6 +2,7 @@
 """Abstract cloud endpoint."""
 
 import errno
+import json
 import logging
 import os
 import pickle
@@ -78,6 +79,15 @@ class EndPoint:
         Get a list of all authenticated endpoints.
         """
         return EndPoint.__endpoints
+
+    def _make_request(self, operation, uri, method='GET'):
+        """
+        Make an API request and parse response into JSON.
+        """
+        _, response = self._connection.request(method=method, uri=uri,
+                headers=self.get_signed_request(uri, method=method))
+        self._logger.debug('%s => %s', operation, response)
+        return json.loads(response)
 
     def authenticate(self):
         """

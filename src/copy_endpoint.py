@@ -67,11 +67,7 @@ class CopyEndPoint(EndPoint):
         CopyEndPoint.store_credentials(self._access_token, self._uuid)
 
     def get_info(self):
-        _, response = self._connection.request(method='GET', uri=GETINFO_URL,
-                headers=self.get_signed_request(GETINFO_URL))
-        self._logger.debug(response)
-
-        info = json.loads(response)
+        info = self._make_request(operation='GetInfo', uri=GETINFO_URL)
         user_info = {
             'uid': info['user_id'],
             'uname': info['email'],
@@ -88,10 +84,7 @@ class CopyEndPoint(EndPoint):
 
     def if_file_exists(self, path):
         url = GET_PATH_METADATA_URL % path
-        _, response = self._connection.request(method='GET', uri=url,
-                headers=self.get_signed_request(url))
-        info = json.loads(response)
-        self._logger.debug(info)
+        info = self._make_request(operation='GetMetadata', uri=url)
 
         if 'type' in info and info['type'] == 'file' and 'error' not in info:
             return True
@@ -100,10 +93,7 @@ class CopyEndPoint(EndPoint):
 
     def if_folder_exists(self, path):
         url = GET_PATH_METADATA_URL % path
-        _, response = self._connection.request(method='GET', uri=url,
-                headers=self.get_signed_request(url))
-        info = json.loads(response)
-        self._logger.debug(info)
+        info = self._make_request(operation='GetMetadata', uri=url)
 
         if 'type' in info and info['type'] == 'dir' and 'error' not in info:
             return True
@@ -112,11 +102,7 @@ class CopyEndPoint(EndPoint):
 
     def create_folder(self, path):
         url = CREATE_FOLDER_URL % path
-        self._logger.debug(url)
-        _, response = self._connection.request(method='POST', uri=url,
-                headers=self.get_signed_request(url, 'POST'))
-        info = json.loads(response)
-        self._logger.debug(info)
+        info = self._make_request(operation='CreateFolder', uri=url, method='POST')
 
     def get_signed_request(self, url, method='GET'):
         """
