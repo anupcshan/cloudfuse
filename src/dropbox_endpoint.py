@@ -63,22 +63,7 @@ class DropBoxEndPoint(EndPoint):
         DropBoxEndPoint.store_credentials(self._access_token, self._uuid)
 
     def get_info(self):
-        params = {
-            'oauth_version': "1.0",
-            'oauth_nonce': oauth.generate_nonce(),
-            'oauth_timestamp': int(time.time()),
-            'oauth_token': self._access_token['oauth_token'],
-            'oauth_consumer_key': CONSUMER_KEY
-        }
-
-        token = oauth.Token(key=self._access_token['oauth_token'],
-                secret=self._access_token['oauth_token_secret'])
-        req = oauth.Request(method='GET', url=GETINFO_URL, parameters=params)
-        signature_method = oauth.SignatureMethod_HMAC_SHA1()
-        req.sign_request(signature_method, self._consumer, token)
-
-        _, response = self._connection.request(method='GET', uri=GETINFO_URL, headers=req.to_header())
-        info = json.loads(response)
+        info = self._make_request(operation='GetInfo', uri=GETINFO_URL)
         user_info = {
             'uid': info['uid'],
             'uname': info['email'],
@@ -95,10 +80,7 @@ class DropBoxEndPoint(EndPoint):
 
     def if_file_exists(self, path):
         url = GET_PATH_METADATA_URL % path
-        _, response = self._connection.request(method='GET', uri=url,
-                headers=self.get_signed_request(url))
-        info = json.loads(response)
-        self._logger.debug(info)
+        info = self._make_request(operation='GetMetadata', uri=url)
 
         if 'is_dir' in info and info['is_dir'] != True and 'error' not in info:
             return True
@@ -107,10 +89,7 @@ class DropBoxEndPoint(EndPoint):
 
     def if_folder_exists(self, path):
         url = GET_PATH_METADATA_URL % path
-        _, response = self._connection.request(method='GET', uri=url,
-                headers=self.get_signed_request(url))
-        info = json.loads(response)
-        self._logger.debug(info)
+        info = self._make_request(operation='GetMetadata', uri=url)
 
         if 'is_dir' in info and info['is_dir'] and 'error' not in info:
             return True
@@ -119,10 +98,7 @@ class DropBoxEndPoint(EndPoint):
 
     def create_folder(self, path):
         url = CREATE_FOLDER_URL % path
-        self._logger.debug(url)
-        _, response = self._connection.request(method='POST', uri=url,
-                headers=self.get_signed_request(url, 'POST'))
-        info = json.loads(response)
+        info = self._make_request(operation='CreateFolder', uri=url, method='POST')
         self._logger.debug(info)
 
     def get_signed_request(self, url, method='GET'):
