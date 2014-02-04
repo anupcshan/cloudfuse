@@ -1,11 +1,12 @@
 #!/usr/bin/python
 """Cloud endpoint which talks to dropbox.com"""
 
-from endpoint import EndPoint
+from endpoint import EndPoint, PathMetadata
 import httplib2
 import json
 import logging
 import oauth2 as oauth
+import os
 import time
 import urlparse
 
@@ -87,14 +88,25 @@ class DropBoxEndPoint(EndPoint):
 
         return False
 
-    def if_folder_exists(self, path):
+    def get_path_metadata(self, path):
         url = GET_PATH_METADATA_URL % path
         info = self._make_request(operation='GetMetadata', uri=url)
 
-        if 'is_dir' in info and info['is_dir'] and 'error' not in info:
-            return True
+        if not info or 'error' in info:
+            return None
 
-        return False
+        pathmetadata = PathMetadata()
+        pathmetadata.is_dir = info['is_dir']
+        pathmetadata.path = info['path']
+        pathmetadata.name = os.path.basename(info['path'])
+        pathmetadata.mtime = info['modified']
+
+        if pathmetadata.is_dir:
+            pathmetadata.size = 0
+        else:
+            pathmetadata.size = info['bytes']
+
+        return pathmetadata
 
     def create_folder(self, path):
         url = CREATE_FOLDER_URL % path

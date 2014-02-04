@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """Cloud endpoint which talks to copy.com"""
 
-from endpoint import EndPoint
+from endpoint import EndPoint, PathMetadata
 import httplib2
 import json
 import logging
@@ -82,23 +82,25 @@ class CopyEndPoint(EndPoint):
     def load_credentials(self, credentials):
         self._access_token = credentials
 
-    def if_file_exists(self, path):
+    def get_path_metadata(self, path):
         url = GET_PATH_METADATA_URL % path
         info = self._make_request(operation='GetMetadata', uri=url)
 
-        if 'type' in info and info['type'] == 'file' and 'error' not in info:
-            return True
+        if not info or 'error' in info or 'type' not in info:
+            return None
 
-        return False
+        pathmetadata = PathMetadata()
+        pathmetadata.is_dir = info['type'] == 'dir'
+        pathmetadata.path = info['path']
+        pathmetadata.name = info['name']
+        pathmetadata.mtime = info['modified_time']
 
-    def if_folder_exists(self, path):
-        url = GET_PATH_METADATA_URL % path
-        info = self._make_request(operation='GetMetadata', uri=url)
+        if pathmetadata.is_dir:
+            pathmetadata.size = 0
+        else:
+            pathmetadata.size = info['size']
 
-        if 'type' in info and info['type'] == 'dir' and 'error' not in info:
-            return True
-
-        return False
+        return pathmetadata
 
     def create_folder(self, path):
         url = CREATE_FOLDER_URL % path

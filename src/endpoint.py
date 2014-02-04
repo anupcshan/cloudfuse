@@ -9,6 +9,24 @@ import pickle
 import uuid
 from config import Config
 
+class PathMetadata:
+    """
+    Data object to store metadata about an object location in a backend
+    datastore.
+
+    TODO: Should sharing info be a part of this structure?
+    TODO: Should there be a way to check for object modification?
+          Like hashes or timestamps.
+    """
+
+    def __init__(self):
+        self.is_dir = False
+        self.size = 0
+        self.path = ""
+        self.name = ""
+        self.mtime = 0
+        self.children = []
+
 class EndPoint:
     """
     Abstract cloud endpoint interface.
@@ -136,13 +154,23 @@ class EndPoint:
         """
         Checks if folder at given path exists on backend provider.
         """
-        raise NotImplementedError("if_folder_exists not implemented")
+        pathinfo = self.get_path_metadata(path)
+
+        if pathinfo is not None and pathinfo.is_dir is True:
+            return True
+
+        return False
 
     def if_file_exists(self, path):
         """
         Checks if file at given path exists on backend provider.
         """
-        raise NotImplementedError("if_file_exists not implemented")
+        pathinfo = self.get_path_metadata(path)
+
+        if pathinfo is not None and pathinfo.is_dir is not True:
+            return True
+
+        return False
 
     def create_folder_if_absent(self, path):
         """
@@ -168,6 +196,13 @@ class EndPoint:
         TODO: Come up with a consistent format for this data.
         """
         raise NotImplementedError("get_info not implemented")
+
+    def get_path_metadata(self, path):
+        """
+        Get metadata about the object at the specified path.
+        Returns a PathMetadata instance.
+        """
+        raise NotImplementedError("get_path_metadata not implemented")
 
     def listfiles(self, folder = None):
         """
