@@ -25,7 +25,8 @@ class PathMetadata:
         self.path = ""
         self.name = ""
         self.mtime = 0
-        self.children = []
+        self.children = None
+        self.explored = False
 
 class EndPoint:
     """
@@ -203,14 +204,6 @@ class EndPoint:
         Returns a PathMetadata instance.
         """
         raise NotImplementedError("get_path_metadata not implemented")
-
-    def listfiles(self, folder = None):
-        """
-        Get a list of all files in a folder.
-
-        TODO: Error codes?
-        """
-        raise NotImplementedError("listFiles not implemented")
 
     def remove_file(self, path):
         """

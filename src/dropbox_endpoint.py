@@ -88,13 +88,7 @@ class DropBoxEndPoint(EndPoint):
 
         return False
 
-    def get_path_metadata(self, path):
-        url = GET_PATH_METADATA_URL % path
-        info = self._make_request(operation='GetMetadata', uri=url)
-
-        if not info or 'error' in info:
-            return None
-
+    def path_metadata_from_info(self, info):
         pathmetadata = PathMetadata()
         pathmetadata.is_dir = info['is_dir']
         pathmetadata.path = info['path']
@@ -103,10 +97,28 @@ class DropBoxEndPoint(EndPoint):
 
         if pathmetadata.is_dir:
             pathmetadata.size = 0
+            pathmetadata.children = []
+            if 'contents' in info:
+                pathmetadata.explored = True
+                for child in info['contents']:
+                    pathmetadata.children.append(self.path_metadata_from_info(child))
+            else:
+                pathmetadata.explored = False
         else:
+            pathmetadata.explored = True
             pathmetadata.size = info['bytes']
+            pathmetadata.children = None
 
         return pathmetadata
+
+    def get_path_metadata(self, path):
+        url = GET_PATH_METADATA_URL % path
+        info = self._make_request(operation='GetMetadata', uri=url)
+
+        if not info or 'error' in info:
+            return None
+
+        return self.path_metadata_from_info(info)
 
     def create_folder(self, path):
         url = CREATE_FOLDER_URL % path
