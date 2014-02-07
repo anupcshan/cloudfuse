@@ -16,11 +16,9 @@ from copy_endpoint import CopyEndPoint
 # pylint: enable-msg=W0611
 
 class Inode:
-    __current_id = 0
-    inodes = {}
-
-    def __init__(self):
-        self.id = Inode.get_next_id()
+    """ Inode data structure. """
+    def __init__(self, _id):
+        self.id = _id
         self.name = ''
         self.isDir = True
         self.size = 0
@@ -30,23 +28,39 @@ class Inode:
         self.atime = self.ctime = self.mtime = time()
         self.children = []
         self.parent = None
-        Inode.inodes[self.id] = self
 
-    @classmethod
-    def get_next_id(cls):
-        Inode.__current_id += 1
-        return Inode.__current_id
 
-ROOT_INODE = Inode()
-ROOT_INODE.parent = ROOT_INODE
-ROOT_INODE.permissions = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH | stat.S_IFDIR | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+class FSTree:
+    """ Inode tree structure and associated utilities. """
+    def __init__(self):
+        self.__current_id = 0
+        self.inodes = {}
+
+        self.ROOT_INODE = self.new_inode()
+        self.ROOT_INODE.parent = self.ROOT_INODE
+        self.ROOT_INODE.permissions = (stat.S_IRUSR | stat.S_IWUSR |
+                stat.S_IRGRP | stat.S_IROTH | stat.S_IFDIR | stat.S_IXUSR |
+                stat.S_IXGRP | stat.S_IXOTH)
+
+    def new_inode(self):
+        next_id = self.__get_next_id()
+        new_inode = Inode(next_id)
+        self.inodes[next_id] = new_inode
+        return new_inode
+
+    def __get_next_id(self):
+        self.__current_id += 1
+        return self.__current_id
+
+    def get_inode_for_id(self, _id):
+        return self.inodes[_id]
 
 class CloudFSOperations(llfuse.Operations):
     """CloudFS implementation of llfuse Operations class."""
     def __init__(self):
         super(CloudFSOperations, self).__init__()
         EndPoint.load_saved_endpoints()
-        self.tree = ROOT_INODE
+        self.tree = FSTree()
 
     def statfs(self):
         stat_ = llfuse.StatvfsData()
@@ -76,9 +90,9 @@ class CloudFSOperations(llfuse.Operations):
         if name == '.':
             inode = parent_inode
         elif name == '..':
-            inode = Inode.inodes[parent_inode].parent.id
+            inode = self.tree.get_inode_for_id(parent_inode).parent.id
         else:
-            parent = Inode.inodes[parent_inode].parent
+            parent = self.tree.get_inode_for_id(parent_inode).parent
             for child in parent.children:
                 if child.name == name:
                     inode = child.id
@@ -93,7 +107,7 @@ class CloudFSOperations(llfuse.Operations):
 
     def readdir(self, inode, off):
         print 'Readdir of inode %d at offset %d' % (inode, off)
-        node = Inode.inodes[inode]
+        node = self.tree.get_inode_for_id(inode)
         
         i = off
         for child in node.children[off:]:
@@ -102,7 +116,7 @@ class CloudFSOperations(llfuse.Operations):
                 yield (child.name.replace('/', '//'), self.getattr(child.id), i)
 
     def getattr(self, inode):
-        node = Inode.inodes[inode]
+        node = self.tree.get_inode_for_id(inode)
         print 'Calling getattr on inode %d : %s' % (inode, node.name)
 
         entry = llfuse.EntryAttributes()
@@ -149,7 +163,7 @@ if __name__ == '__main__':
     parser.add_argument('mountpoint', help='Root directory of mounted CloudFS')
     args = parser.parse_args()
 
-    logLevel = logging.WARNING
+    logLevel = logging.INFO
     if args.verbose:
       logLevel = logging.DEBUG
 
@@ -160,7 +174,9 @@ if __name__ == '__main__':
     # TODO: Load filesystem structure from backends and export them
     #       using FUSE.
     
+    logging.info('Mounting CloudFS')
     llfuse.init(operations, args.mountpoint, [ b'fsname=CloudFS' ])
+    logging.info('Mounted CloudFS at %s' % (args.mountpoint))
     
     try:
         llfuse.main(single=False)
