@@ -2,6 +2,7 @@
 """Abstract cloud endpoint."""
 
 import errno
+import hashlib
 import json
 import logging
 import os
@@ -44,6 +45,7 @@ class EndPoint:
             _uuid = uuid.uuid4().hex
         self._uuid = _uuid
         self._cloudfs_root_dir = "_cloudfs"
+        self._cloudfs_root_inode = "/ROOT"
 
     @classmethod
     def ensure_credentialsdir_exists(cls):
@@ -99,14 +101,17 @@ class EndPoint:
         """
         return EndPoint.__endpoints
 
-    def _make_request(self, operation, uri, method='GET'):
+    def _make_request(self, operation, uri, method='GET', parse=True, body=None):
         """
         Make an API request and parse response into JSON.
         """
         _, response = self._connection.request(method=method, uri=uri,
-                headers=self.get_signed_request(uri, method=method))
-        self._logger.debug('%s => %s', operation, response)
-        return json.loads(response)
+                headers=self.get_signed_request(uri, method=method), body=body)
+        if parse:
+            self._logger.debug('%s => %s', operation, response)
+            return json.loads(response)
+        else:
+            return response
 
     def authenticate(self):
         """
@@ -137,19 +142,42 @@ class EndPoint:
         """
         raise NotImplementedError("create_file not implemented")
 
+    def rel_path(self, path):
+        return self._cloudfs_root_dir + path
+
     def safe_create_filesystem(self):
         """
         Create empty filesystem structure
         """
         self.safe_create_root_folder()
-        self.create_folder_if_absent(self._cloudfs_root_dir + '/structure')
-        self.create_folder_if_absent(self._cloudfs_root_dir + '/objects')
+        self.create_folder_if_absent(self.rel_path('/structure'))
+        self.create_folder_if_absent(self.rel_path('/objects'))
 
     def safe_create_root_folder(self):
         """
         Create empty root folder if not present.
         """
         self.create_folder_if_absent(self._cloudfs_root_dir)
+
+    def safe_get_root_inode(self):
+        """
+        Return root inode instance if present, None otherwise.
+        """
+        if self.if_file_exists(self.rel_path(self._cloudfs_root_inode)):
+            root_block_hash = self.get_file(self.rel_path(self._cloudfs_root_inode))
+            return pickle.loads(self.get_file(self.rel_path('/' + root_block_hash)))
+
+        return None
+
+    def create_root_inode(self, inode):
+        inode_data = pickle.dumps(inode)
+        dhash = self.create_object(inode_data)
+        self.create_file(self.rel_path(self._cloudfs_root_inode), dhash)
+
+    def create_object(self, data):
+        dhash = hashlib.sha256(data).hexdigest()
+        self.create_file(self.rel_path('/' + dhash), data)
+        return dhash
 
     def if_folder_exists(self, path):
         """

@@ -35,12 +35,25 @@ class FSTree:
     def __init__(self):
         self.__current_id = 0
         self.inodes = {}
+        self.ROOT_INODE = None
+
+    def generate_root_inode(self):
+        if self.ROOT_INODE is not None:
+            raise "Attempting to overwrite root inode"
 
         self.ROOT_INODE = self.new_inode()
         self.ROOT_INODE.parent = self.ROOT_INODE
         self.ROOT_INODE.permissions = (stat.S_IRUSR | stat.S_IWUSR |
                 stat.S_IRGRP | stat.S_IROTH | stat.S_IFDIR | stat.S_IXUSR |
                 stat.S_IXGRP | stat.S_IXOTH)
+
+    def register_root_inode(self, root_inode):
+        if self.ROOT_INODE is not None:
+            raise "Attempting to overwrite root inode"
+
+        self.ROOT_INODE = root_inode
+        self.inodes[root_inode.id] = root_inode
+        self.__current_id += 1
 
     def new_inode(self):
         next_id = self.__get_next_id()
@@ -154,6 +167,19 @@ class CloudFSOperations(llfuse.Operations):
         """
         for endpoint in EndPoint.get_all_endpoints():
             endpoint.safe_create_filesystem()
+
+        root = None
+        for endpoint in EndPoint.get_all_endpoints():
+            x = endpoint.safe_get_root_inode()
+            if x is not None:
+                if root is None or x.version > root.version:
+                    root = x
+
+        if root is None:
+            self.tree.generate_root_inode()
+            root = endpoint.create_root_inode(self.tree.ROOT_INODE)
+        else:
+            self.tree.register_root_inode(root)
 
 if __name__ == '__main__':
     # pylint: disable-msg=C0103 

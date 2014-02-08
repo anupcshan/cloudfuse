@@ -20,6 +20,8 @@ GETINFO_URL = 'https://api.dropbox.com/1/account/info'
 REQUEST_TOKEN_URL = 'https://api.dropbox.com/1/oauth/request_token'
 GET_PATH_METADATA_URL = 'https://api.dropbox.com/1/metadata/dropbox/%s'
 CREATE_FOLDER_URL = 'https://api.dropbox.com/1/fileops/create_folder?path=%s&root=dropbox'
+CREATE_FILE_URL = 'https://api-content.dropbox.com/1/files_put/dropbox/%s'
+GET_FILE_URL = 'https://api-content.dropbox.com/1/files/dropbox/%s'
 
 class DropBoxEndPoint(EndPoint):
     """
@@ -123,6 +125,16 @@ class DropBoxEndPoint(EndPoint):
     def create_folder(self, path):
         url = CREATE_FOLDER_URL % path
         info = self._make_request(operation='CreateFolder', uri=url, method='POST')
+        self._logger.debug(info)
+
+    def get_file(self, path):
+        url = GET_FILE_URL % path
+        data = self._make_request(operation='GetFile', uri=url, parse=False)
+        return data
+
+    def create_file(self, path, data):
+        url = CREATE_FILE_URL % path
+        info = self._make_request(operation='CreateFile', uri=url, method='POST', body=data)
         self._logger.debug(info)
 
     def get_signed_request(self, url, method='GET'):
