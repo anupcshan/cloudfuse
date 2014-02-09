@@ -154,7 +154,6 @@ class EndPoint:
         Create empty filesystem structure
         """
         self.safe_create_root_folder()
-        self.create_folder_if_absent(self.rel_path('/structure'))
         self.create_folder_if_absent(self._cloudfs_objects_dir)
 
     def safe_create_root_folder(self):

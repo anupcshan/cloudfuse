@@ -36,13 +36,14 @@ class FSTree:
         self.__current_id = 0
         self.inodes = {}
         self.ROOT_INODE = None
+        self.inode_open_count = {}
 
     def generate_root_inode(self):
         if self.ROOT_INODE is not None:
             raise "Attempting to overwrite root inode"
 
         self.ROOT_INODE = self.new_inode()
-        self.ROOT_INODE.parent = self.ROOT_INODE
+        self.ROOT_INODE.parent = self.ROOT_INODE.id
         self.ROOT_INODE.permissions = (stat.S_IRUSR | stat.S_IWUSR |
                 stat.S_IRGRP | stat.S_IROTH | stat.S_IFDIR | stat.S_IXUSR |
                 stat.S_IXGRP | stat.S_IXOTH)
@@ -66,6 +67,7 @@ class FSTree:
         return self.__current_id
 
     def get_inode_for_id(self, _id):
+        print 'Get Inode for id %d' % (_id)
         return self.inodes[_id]
 
 class CloudFSOperations(llfuse.Operations):
@@ -99,14 +101,16 @@ class CloudFSOperations(llfuse.Operations):
         return stat_
 
     def lookup(self, parent_inode, name):
+        print 'Lookup of name %s under parent_inode %d' % (name, parent_inode)
         inode = None
         if name == '.':
             inode = parent_inode
         elif name == '..':
-            inode = self.tree.get_inode_for_id(parent_inode).parent.id
+            inode = self.tree.get_inode_for_id(parent_inode).parent
         else:
-            parent = self.tree.get_inode_for_id(parent_inode).parent
-            for child in parent.children:
+            parent = self.tree.get_inode_for_id(self.tree.get_inode_for_id(parent_inode).parent)
+            for child_id in parent.children:
+                child = self.tree.get_inode_for_id(child_id)
                 if child.name == name:
                     inode = child.id
 
@@ -123,7 +127,8 @@ class CloudFSOperations(llfuse.Operations):
         node = self.tree.get_inode_for_id(inode)
         
         i = off
-        for child in node.children[off:]:
+        for child_id in node.children[off:]:
+            child = self.tree.get_inode_for_id(child_id)
             if child.name.count('/') == 0:
                 i += 1
                 yield (child.name.replace('/', '//'), self.getattr(child.id), i)
@@ -138,7 +143,12 @@ class CloudFSOperations(llfuse.Operations):
         entry.entry_timeout = 300
         entry.attr_timeout = 300
         entry.st_mode = node.permissions
-        entry.st_nlink = len(node.children) + 1
+
+        if node.isDir:
+            entry.st_nlink = len(node.children) + 1
+        else:
+            entry.st_nlink = 1
+
         entry.st_uid = node.uid
         entry.st_gid = node.gid
         entry.st_rdev = 0
@@ -152,14 +162,43 @@ class CloudFSOperations(llfuse.Operations):
 
         return entry
 
+    def setattr(self, inode, attr):
+        logging.info('Setattr not implemented: Inode %d' % (inode))
+        return self.getattr(inode)
+
     def open(self, inode, flags):
         print 'Opening file %d with flags %s' % (inode, flags)
 
-        self.inode_open_count[inode] += 1
+        if inode not in self.tree.inode_open_count:
+            self.tree.inode_open_count[inode] = 0
+        self.tree.inode_open_count[inode] += 1
         return inode
 
     def access(self, inode, mode, ctx):
         return True
+
+    def create(self, parent_inode_id, name, mode, flags, ctx):
+        parent_inode = self.tree.get_inode_for_id(parent_inode_id)
+        child_inode = self.tree.new_inode()
+        child_inode.parent = parent_inode_id
+        child_inode.isDir = False
+        child_inode.name = name
+        child_inode.permissions = mode
+        parent_inode.children.append(child_inode.id)
+        self.open(child_inode.id, flags)
+        return (child_inode.id, self.getattr(child_inode.id))
+
+    def mkdir(self, parent_inode_id, name, mode, ctx):
+        print 'Mkdir: %s in parent %d' % (name, parent_inode_id)
+        parent_inode = self.tree.get_inode_for_id(parent_inode_id)
+        child_inode = self.tree.new_inode()
+        child_inode.parent = parent_inode_id
+        child_inode.isDir = True
+        child_inode.children = []
+        child_inode.name = name
+        child_inode.permissions = mode
+        parent_inode.children.append(child_inode.id)
+        return self.getattr(child_inode.id)
 
     def auto_create_filesystem(self):
         """
