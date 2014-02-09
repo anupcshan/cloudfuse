@@ -28,7 +28,7 @@ class Inode:
         self.atime = self.ctime = self.mtime = time()
         self.children = []
         self.parent = None
-
+        self.version = 1
 
 class FSTree:
     """ Inode tree structure and associated utilities. """
@@ -172,10 +172,13 @@ class CloudFSOperations(llfuse.Operations):
         for endpoint in EndPoint.get_all_endpoints():
             x = endpoint.safe_get_root_inode()
             if x is not None:
+                logging.info('Found root inode at endpoint %s' % (endpoint))
                 if root is None or x.version > root.version:
                     root = x
 
         if root is None:
+            logging.info('Did not find existing root inode pointer on any '
+                    'endpoint. Generating new root inode pointer.')
             self.tree.generate_root_inode()
             root = endpoint.create_root_inode(self.tree.ROOT_INODE)
         else:

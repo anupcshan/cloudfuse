@@ -46,6 +46,10 @@ class EndPoint:
         self._uuid = _uuid
         self._cloudfs_root_dir = "_cloudfs"
         self._cloudfs_root_inode = "/ROOT"
+        self._cloudfs_objects_dir = self.rel_path("/objects")
+
+    def __str__(self):
+        return '%s:%s' % (self.get_providerid(), self._uuid)
 
     @classmethod
     def ensure_credentialsdir_exists(cls):
@@ -151,7 +155,7 @@ class EndPoint:
         """
         self.safe_create_root_folder()
         self.create_folder_if_absent(self.rel_path('/structure'))
-        self.create_folder_if_absent(self.rel_path('/objects'))
+        self.create_folder_if_absent(self._cloudfs_objects_dir)
 
     def safe_create_root_folder(self):
         """
@@ -165,7 +169,9 @@ class EndPoint:
         """
         if self.if_file_exists(self.rel_path(self._cloudfs_root_inode)):
             root_block_hash = self.get_file(self.rel_path(self._cloudfs_root_inode))
-            return pickle.loads(self.get_file(self.rel_path('/' + root_block_hash)))
+            # FIXME: The root block need not be present on the same provider as the
+            # ROOT block pointer.
+            return pickle.loads(self.get_object(root_block_hash))
 
         return None
 
@@ -174,9 +180,12 @@ class EndPoint:
         dhash = self.create_object(inode_data)
         self.create_file(self.rel_path(self._cloudfs_root_inode), dhash)
 
+    def get_object(self, objhash):
+        return self.get_file(self._cloudfs_objects_dir + '/' + objhash)
+
     def create_object(self, data):
         dhash = hashlib.sha256(data).hexdigest()
-        self.create_file(self.rel_path('/' + dhash), data)
+        self.create_file(self._cloudfs_objects_dir + '/' + dhash, data)
         return dhash
 
     def if_folder_exists(self, path):

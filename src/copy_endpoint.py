@@ -20,6 +20,8 @@ GETINFO_URL = 'https://api.copy.com/rest/user'
 REQUEST_TOKEN_URL = 'https://api.copy.com/oauth/request'
 GET_PATH_METADATA_URL = 'https://api.copy.com/rest/meta/copy/%s'
 CREATE_FOLDER_URL = 'https://api.copy.com/rest/files/%s'
+CREATE_FILE_URL = 'https://api.copy.com/rest/files/%s'
+GET_FILE_URL = 'https://api.copy.com/rest/files/%s'
 
 class CopyEndPoint(EndPoint):
     """
@@ -105,6 +107,16 @@ class CopyEndPoint(EndPoint):
     def create_folder(self, path):
         url = CREATE_FOLDER_URL % path
         info = self._make_request(operation='CreateFolder', uri=url, method='POST')
+
+    def get_file(self, path):
+        url = GET_FILE_URL % path
+        data = self._make_request(operation='GetFile', uri=url, parse=False)
+        return data
+
+    def create_file(self, path, data):
+        url = CREATE_FILE_URL % path
+        info = self._make_request(operation='CreateFile', uri=url, method='POST', body=data)
+        self._logger.debug(info)
 
     def get_signed_request(self, url, method='GET'):
         """
